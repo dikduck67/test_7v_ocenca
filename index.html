@@ -157,6 +157,89 @@
             animation: slideIn 0.5s ease-out;
         }
 
+        .admin-panel {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+            color: white;
+        }
+
+        .admin-panel.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .admin-panel h2 {
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .stats-table th {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .stats-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .clear-btn {
+            background: rgba(231, 76, 60, 0.8);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: rgb(231, 76, 60);
+        }
+
+        .total-stats {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .total-stat {
+            text-align: center;
+        }
+
+        .total-stat .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .total-stat .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -221,7 +304,6 @@
             color: #764ba2;
         }
 
-        /* Для мобильных устройств */
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -235,6 +317,21 @@
             h1 {
                 font-size: 1.5em;
             }
+
+            .stats-table {
+                font-size: 0.9em;
+            }
+        }
+
+        .delete-entry {
+            color: #ff6b6b;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        .delete-entry:hover {
+            color: #ff0000;
         }
     </style>
 </head>
@@ -242,15 +339,12 @@
     <div class="container">
         <h1>🍎 Оцените фрукты 🍊</h1>
         
-        <!-- Поле для ввода имени -->
         <div class="user-section">
             <label for="userName">👤 Ваше имя:</label>
             <input type="text" id="userName" placeholder="Введите ваше имя" maxlength="30">
         </div>
 
-        <!-- Карточки с фруктами -->
         <div class="fruits-grid">
-            <!-- Яблоко -->
             <div class="fruit-card">
                 <img src="https://emojicdn.elk.sh/🍎?style=google" alt="Яблоко">
                 <h3>Яблоко</h3>
@@ -260,7 +354,6 @@
                 </div>
             </div>
 
-            <!-- Груша -->
             <div class="fruit-card">
                 <img src="https://emojicdn.elk.sh/🍐?style=google" alt="Груша">
                 <h3>Груша</h3>
@@ -270,7 +363,6 @@
                 </div>
             </div>
 
-            <!-- Апельсин -->
             <div class="fruit-card">
                 <img src="https://emojicdn.elk.sh/🍊?style=google" alt="Апельсин">
                 <h3>Апельсин</h3>
@@ -281,10 +373,8 @@
             </div>
         </div>
 
-        <!-- Кнопка отправки -->
         <button onclick="submitRatings()">📊 Показать результаты</button>
 
-        <!-- Блок с результатами -->
         <div class="result" id="result">
             <h2>Результаты оценки</h2>
             <div class="greeting" id="greeting"></div>
@@ -307,19 +397,134 @@
                 <div class="score" id="averageScore">0</div>
             </div>
         </div>
+
+        <div class="admin-panel" id="adminPanel">
+            <h2>🔐 Панель администратора</h2>
+            <div id="statsContainer"></div>
+            <button class="clear-btn" onclick="clearAllData()">🗑️ Очистить все данные</button>
+        </div>
     </div>
 
     <script>
-        function submitRatings() {
-            // Получаем имя пользователя
-            const userName = document.getElementById('userName').value.trim();
+        // Загрузка данных из localStorage
+        function loadAllRatings() {
+            const saved = localStorage.getItem('fruitRatings');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // Сохранение новой оценки
+        function saveRating(userName, apple, pear, orange) {
+            const ratings = loadAllRatings();
+            const timestamp = new Date().toLocaleString('ru-RU');
             
-            // Получаем оценки
+            ratings.push({
+                id: Date.now(),
+                name: userName || 'Гость',
+                apple: apple,
+                pear: pear,
+                orange: orange,
+                average: ((apple + pear + orange) / 3).toFixed(1),
+                date: timestamp
+            });
+            
+            localStorage.setItem('fruitRatings', JSON.stringify(ratings));
+        }
+
+        // Удаление записи по ID
+        function deleteEntry(id) {
+            let ratings = loadAllRatings();
+            ratings = ratings.filter(r => r.id !== id);
+            localStorage.setItem('fruitRatings', JSON.stringify(ratings));
+            showAllStats(); // Обновляем отображение
+        }
+
+        // Очистка всех данных
+        function clearAllData() {
+            if (confirm('Вы уверены, что хотите удалить ВСЕ данные? Это действие нельзя отменить!')) {
+                localStorage.removeItem('fruitRatings');
+                showAllStats();
+            }
+        }
+
+        // Отображение статистики
+        function showAllStats() {
+            const ratings = loadAllRatings();
+            const adminPanel = document.getElementById('adminPanel');
+            const resultBlock = document.getElementById('result');
+            const statsContainer = document.getElementById('statsContainer');
+            
+            // Скрываем обычный результат, показываем админ-панель
+            resultBlock.classList.remove('show');
+            adminPanel.classList.add('show');
+            
+            if (ratings.length === 0) {
+                statsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">Нет сохраненных оценок</p>';
+                return;
+            }
+            
+            // Сортируем по дате (новые сверху)
+            ratings.sort((a, b) => b.id - a.id);
+            
+            // Создаем таблицу
+            let html = '<table class="stats-table">';
+            html += '<thead><tr><th>Имя</th><th>🍎</th><th>🍐</th><th>🍊</th><th>Ср.</th><th>Дата</th><th></th></tr></thead><tbody>';
+            
+            ratings.forEach(entry => {
+                html += `<tr>
+                    <td>${escapeHtml(entry.name)}</td>
+                    <td>${entry.apple.toFixed(1)}</td>
+                    <td>${entry.pear.toFixed(1)}</td>
+                    <td>${entry.orange.toFixed(1)}</td>
+                    <td><strong>${entry.average}</strong></td>
+                    <td>${entry.date || 'Неизвестно'}</td>
+                    <td><span class="delete-entry" onclick="deleteEntry(${entry.id})" title="Удалить запись">✖</span></td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            
+            // Вычисляем общую статистику
+            const totalApple = ratings.reduce((sum, r) => sum + r.apple, 0);
+            const totalPear = ratings.reduce((sum, r) => sum + r.pear, 0);
+            const totalOrange = ratings.reduce((sum, r) => sum + r.orange, 0);
+            const count = ratings.length;
+            
+            html += '<div class="total-stats">';
+            html += `<div class="total-stat"><div class="label">Всего оценок</div><div class="value">${count}</div></div>`;
+            html += `<div class="total-stat"><div class="label">🍎 Среднее</div><div class="value">${(totalApple / count).toFixed(1)}</div></div>`;
+            html += `<div class="total-stat"><div class="label">🍐 Среднее</div><div class="value">${(totalPear / count).toFixed(1)}</div></div>`;
+            html += `<div class="total-stat"><div class="label">🍊 Среднее</div><div class="value">${(totalOrange / count).toFixed(1)}</div></div>`;
+            html += `<div class="total-stat"><div class="label">Общий рейтинг</div><div class="value">${((totalApple + totalPear + totalOrange) / (count * 3)).toFixed(1)}</div></div>`;
+            html += '</div>';
+            
+            statsContainer.innerHTML = html;
+            
+            // Прокручиваем к панели
+            setTimeout(() => {
+                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        // Защита от XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function submitRatings() {
+            const userName = document.getElementById('userName').value.trim();
             const appleRating = parseFloat(document.getElementById('appleRating').value) || 0;
             const pearRating = parseFloat(document.getElementById('pearRating').value) || 0;
             const orangeRating = parseFloat(document.getElementById('orangeRating').value) || 0;
 
-            // Проверяем, что оценки в допустимом диапазоне
+            // Проверка на секретный код
+            if (userName === '5267') {
+                showAllStats();
+                return;
+            }
+
+            // Проверка оценок
             const ratings = [appleRating, pearRating, orangeRating];
             for (let rating of ratings) {
                 if (rating < 0 || rating > 10) {
@@ -328,42 +533,36 @@
                 }
             }
 
-            // Формируем приветствие
-            let greeting;
-            if (userName === '') {
-                greeting = 'Здравствуйте, гость!';
-            } else {
-                greeting = `Здравствуйте, ${userName}!`;
-            }
+            // Сохраняем оценку
+            saveRating(userName, appleRating, pearRating, orangeRating);
 
-            // Вычисляем среднюю оценку
+            // Показываем обычный результат
+            const greeting = userName === '' ? 'Здравствуйте, гость!' : `Здравствуйте, ${userName}!`;
             const average = ((appleRating + pearRating + orangeRating) / 3).toFixed(1);
 
-            // Отображаем результаты
             document.getElementById('greeting').textContent = greeting;
             document.getElementById('appleResult').textContent = appleRating.toFixed(1);
             document.getElementById('pearResult').textContent = pearRating.toFixed(1);
             document.getElementById('orangeResult').textContent = orangeRating.toFixed(1);
             document.getElementById('averageScore').textContent = average;
 
-            // Показываем блок с результатами
             const resultBlock = document.getElementById('result');
+            const adminPanel = document.getElementById('adminPanel');
+            
             resultBlock.classList.add('show');
+            adminPanel.classList.remove('show');
 
-            // Плавно прокручиваем к результатам
             setTimeout(() => {
                 resultBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
         }
 
-        // Добавляем обработчик Enter для удобства
         document.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 submitRatings();
             }
         });
 
-        // Валидация ввода оценок
         document.querySelectorAll('input[type="number"]').forEach(input => {
             input.addEventListener('change', function() {
                 let value = parseFloat(this.value);
@@ -371,12 +570,6 @@
                 if (value > 10) this.value = 10;
                 if (isNaN(value)) this.value = 5;
             });
-        });
-
-        // Если имя уже было введено ранее (например, из localStorage)
-        window.addEventListener('load', function() {
-            // Можно добавить автоматическую загрузку сохраненных данных
-            console.log('Страница загружена! Введите имя и оцените фрукты.');
         });
     </script>
 </body>
